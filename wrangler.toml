@@ -1,10 +1,11 @@
 name = "entrate-extra-search"
 main = "worker.js"
 compatibility_date = "2026-09-17"
+workers_dev = true
 
 [observability]
 enabled = true
 
 [vars]
-# L'API key NON va qui. Impostala come secret:
+# L'API key NON va qui. Impostala come secret nel Worker Cloudflare:
 # npx wrangler secret put OPENAI_API_KEY
