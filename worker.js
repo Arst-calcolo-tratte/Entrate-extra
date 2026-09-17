@@ -1,5 +1,6 @@
 const ALLOWED_ORIGIN = "https://arst-calcolo-tratte.github.io";
 const MODEL = "gpt-5.6-luna";
+const BUILD = "2026-09-17-v4";
 
 const SYSTEM = `Sei il motore di ricerca dell'app "Assistente Entrate Extra".
 Devi cercare opportunità REALI e RECENTI per una persona che vuole costruire circa 300 euro al mese in modo legale.
@@ -24,13 +25,13 @@ NON PROPORRE:
 - qualunque ruolo che richieda laurea, diploma specialistico, albo, abilitazione, certificazione o esperienza professionale specifica non dichiarata
 - lavori che richiedano di imparare una nuova professione prima di poterli svolgere
 - lavori che richiedano partita IVA obbligatoria se l'annuncio la rende esplicita
+- lavori di sviluppo software, creazione siti, gestione social, marketing o servizi digitali professionali
 
 AREE DA CERCARE CON PRIORITÀ:
 1. autista/conducente/driver quando requisiti e autorizzazioni sono compatibili;
 2. turismo, strutture ricettive, supporto operativo, accoglienza semplice, preparazione/assistenza non qualificata;
 3. logistica, magazzino, movimentazione, consegne o supporto operativo quando compatibili con orari e requisiti;
-4. lavori occasionali o saltuari pratici richiesti da privati o attività locali;
-5. piccoli lavori digitali solo se semplici e realmente compatibili con le competenze dichiarate, mai ruoli professionali avanzati.
+4. lavori occasionali o saltuari pratici richiesti da privati o attività locali.
 
 RICERCA:
 - Cerca la DOMANDA: "cerco persona", "cerco qualcuno", "cercasi", "cerco aiuto", "cerco collaboratore", "offro lavoro", "part-time", "lavoro occasionale".
@@ -76,12 +77,12 @@ Massimo 8 risultati.`;
 
 function corsHeaders(origin) {
   const allowed = origin === ALLOWED_ORIGIN ? origin : ALLOWED_ORIGIN;
-  return {"Access-Control-Allow-Origin": allowed,"Access-Control-Allow-Methods":"POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type","Content-Type":"application/json; charset=utf-8","Vary":"Origin"};
+  return {"Access-Control-Allow-Origin": allowed,"Access-Control-Allow-Methods":"POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type","Content-Type":"application/json; charset=utf-8","Vary":"Origin","Cache-Control":"no-store"};
 }
 function json(data,status,origin){return new Response(JSON.stringify(data),{status,headers:corsHeaders(origin)});}
 function extractJson(text){let t=String(text||"").trim();if(t.startsWith("```"))t=t.replace(/^```(?:json)?\s*/i,"").replace(/\s*```$/i,"").trim();const first=t.indexOf("{");const last=t.lastIndexOf("}");if(first>=0&&last>first)t=t.slice(first,last+1);return JSON.parse(t);}
 
-const HARD_EXCLUDE = /social\s*media|digital\s*marketing|marketing\s*(specialist|manager)|seo\s*(specialist|manager)?|commerciale|agente\s+commerciale|procacciatore|venditore|consulente|commercialista|contabile|programmatore|sviluppatore|web\s*designer|grafico\s*(professionista|pubblicitario)?|insegnante|laurea|abilitazione|iscrizione\s+all['’]?albo|partita\s*iva\s*(obbligatoria|required|necessaria)|p\.\s*iva\s*(obbligatoria|required|necessaria)/i;
+const HARD_EXCLUDE = /social\s*media|digital\s*marketing|marketing\s*(specialist|manager)|seo\s*(specialist|manager)?|commerciale|agente\s+commerciale|procacciatore|venditore|consulente|commercialista|contabile|programmatore|sviluppatore|web\s*designer|web\s*developer|sviluppo\s+software|creazione\s+siti|gestione\s+social|grafico\s*(professionista|pubblicitario)?|insegnante|laurea|abilitazione|iscrizione\s+all['’]?albo|partita\s*iva\s*(obbligatoria|required|necessaria)|p\.\s*iva\s*(obbligatoria|required|necessaria)/i;
 const RELEVANT = /autista|conducente|driver|ncc|autobus|pullman|trasporto|turismo|hotel|albergo|b&b|struttura\s+ricettiva|accoglienza|facchino|facchinaggio|magazzino|logistica|consegna|corriere|movimentazione|supporto\s+operativo|pulizie|manutenzione|aiuto|occasionale|part[- ]?time/i;
 
 function filterResults(results){
@@ -97,19 +98,19 @@ export default {
   async fetch(request,env){
     const origin=request.headers.get("Origin")||ALLOWED_ORIGIN;
     if(request.method==="OPTIONS")return new Response(null,{status:204,headers:corsHeaders(origin)});
-    if(request.method!=="POST")return json({error:"Metodo non consentito"},405,origin);
-    if(!env.OPENAI_API_KEY)return json({error:"OPENAI_API_KEY non configurata nel Worker"},500,origin);
-    let body;try{body=await request.json();}catch{return json({error:"JSON non valido"},400,origin);}
+    if(request.method!=="POST")return json({error:"Metodo non consentito",build:BUILD},405,origin);
+    if(!env.OPENAI_API_KEY)return json({error:"OPENAI_API_KEY non configurata nel Worker",build:BUILD},500,origin);
+    let body;try{body=await request.json();}catch{return json({error:"JSON non valido",build:BUILD},400,origin);}
     const query=String(body?.query||"").trim();
     const profile=body?.profile||{};
-    if(!query)return json({error:"Query mancante"},400,origin);
-    if(query.length>4000)return json({error:"Query troppo lunga"},400,origin);
+    if(!query)return json({error:"Query mancante",build:BUILD},400,origin);
+    if(query.length>4000)return json({error:"Query troppo lunga",build:BUILD},400,origin);
     const userPrompt=`PROFILO UTENTE:\n${JSON.stringify(profile,null,2)}\n\nRICHIESTA DI RICERCA:\n${query}\n\nApplica i filtri in modo estremamente rigoroso. Meglio nessun risultato che un risultato incompatibile. Cerca ora sul web e restituisci esclusivamente il JSON richiesto.`;
     const api=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{"Authorization":`Bearer ${env.OPENAI_API_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({model:MODEL,tools:[{type:"web_search"}],input:[{role:"system",content:[{type:"input_text",text:SYSTEM}]},{role:"user",content:[{type:"input_text",text:userPrompt}]}],max_output_tokens:5000})});
     const raw=await api.text();
-    if(!api.ok){let detail=raw;try{detail=JSON.parse(raw)?.error?.message||raw;}catch{}return json({error:`OpenAI: ${detail}`},api.status,origin);}
-    let response;try{response=JSON.parse(raw);}catch{return json({error:"Risposta API non valida"},502,origin);}
+    if(!api.ok){let detail=raw;try{detail=JSON.parse(raw)?.error?.message||raw;}catch{}return json({error:`OpenAI: ${detail}`,build:BUILD},api.status,origin);}
+    let response;try{response=JSON.parse(raw);}catch{return json({error:"Risposta API non valida",build:BUILD},502,origin);}
     const text=response.output_text||response.output?.map(x=>x.content?.map(c=>c.text||"").join("")).join("")||"";
-    try{const parsed=extractJson(text);const results=filterResults(Array.isArray(parsed.results)?parsed.results:[]);return json({results},200,origin);}catch{return json({error:"Il motore ha restituito un formato non interpretabile",raw:text.slice(0,1000)},502,origin);}
+    try{const parsed=extractJson(text);const results=filterResults(Array.isArray(parsed.results)?parsed.results:[]);return json({results,build:BUILD},200,origin);}catch{return json({error:"Il motore ha restituito un formato non interpretabile",raw:text.slice(0,1000),build:BUILD},502,origin);}
   }
 };
