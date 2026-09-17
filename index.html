@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827"><title>Entrate Extra</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f3f4f6;color:#111827}main{max-width:1050px;margin:auto;padding:24px}.hero{background:#111827;color:white;border-radius:24px;padding:28px;margin-bottom:18px}.hero h1{margin:0 0 8px;font-size:32px}.hero p{margin:0;color:#cbd5e1}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.card,.panel{background:white;border-radius:18px;padding:18px;box-shadow:0 2px 10px #0000000b}.label{font-size:13px;color:#6b7280}.value{font-size:26px;font-weight:700;margin-top:5px}.green{color:#15803d}.orange{color:#c2410c}.progress{height:12px;background:#e5e7eb;border-radius:99px;overflow:hidden;margin:14px 0}.bar{height:100%;width:0;background:#111827;transition:.3s}.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}label{font-size:13px;color:#4b5563}input,select,button{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:12px;font-size:15px;background:white}button{background:#111827;color:white;border:0;font-weight:600;cursor:pointer}.ideas{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}.idea{border:1px solid #e5e7eb;border-radius:14px;padding:15px}.idea h3{margin:0 0 6px}.idea p{margin:4px 0;color:#6b7280;font-size:14px}.idea b{color:#111827}@media(max-width:760px){main{padding:14px}.grid,.controls,.ideas{grid-template-columns:1fr 1fr}.grid .card:last-child{grid-column:span 2}}@media(max-width:480px){.grid,.controls,.ideas{grid-template-columns:1fr}.grid .card:last-child{grid-column:auto}}
+</style></head>
+<body><main>
+<section class="hero"><h1>Entrate Extra</h1><p>Obiettivo: costruire un'entrata aggiuntiva reale e misurabile per arrivare a <b>300 €/mese</b>.</p></section>
+<section class="grid">
+<div class="card"><div class="label">Obiettivo mensile</div><div class="value">€ <span id="goal">300</span></div></div>
+<div class="card"><div class="label">Entrate registrate</div><div class="value green">€ <span id="earned">0</span></div></div>
+<div class="card"><div class="label">Mancano</div><div class="value orange">€ <span id="missing">300</span></div></div>
+<div class="card"><div class="label">Progresso</div><div class="value"><span id="percent">0</span>%</div></div>
+</section>
+<section class="panel"><div class="label">Avanzamento verso €300/mese</div><div class="progress"><div class="bar" id="bar"></div></div>
+<div class="controls"><div><label>Obiettivo €/mese</label><input id="goalInput" type="number" value="300" min="1"></div><div><label>Entrata aggiunta (€)</label><input id="addInput" type="number" value="0" min="0" step="0.01"></div><div><label>Attività</label><select id="activity"><option>NCC / servizio locale</option><option>Micro-servizio digitale</option><option>Prodotto digitale</option><option>Attività online</option><option>Altro</option></select></div></div><button id="addBtn" style="margin-top:12px">+ Registra entrata</button></section>
+<section class="panel" style="margin-top:18px"><h2 style="margin-top:0">Idee da valutare</h2><div class="ideas">
+<div class="idea"><h3>Servizi locali</h3><p>Servizi collegati a trasporti, turismo e commissioni.</p><b>Potenziale: €100–400/mese</b></div>
+<div class="idea"><h3>Micro-servizi web</h3><p>Piccole web app, calcolatori, pagine e automazioni per attività locali.</p><b>Potenziale: €50–500/mese</b></div>
+<div class="idea"><h3>Prodotti digitali</h3><p>Strumenti semplici vendibili più volte senza svolgere ogni volta lo stesso lavoro.</p><b>Potenziale: variabile</b></div>
+<div class="idea"><h3>Entrate online</h3><p>Selezionare solo opportunità con costi iniziali bassi e rendimento verificabile.</p><b>Regola: niente promesse di guadagno facile</b></div>
+</div></section>
+</main><script>
+const state=JSON.parse(localStorage.getItem('entrate-extra')||'{"goal":300,"earned":0}');
+const $=id=>document.getElementById(id);
+$('goalInput').value=state.goal;
+function render(){const g=Number(state.goal)||300,e=Number(state.earned)||0,m=Math.max(0,g-e),p=Math.min(100,e/g*100);$('goal').textContent=g.toFixed(0);$('earned').textContent=e.toFixed(2);$('missing').textContent=m.toFixed(2);$('percent').textContent=p.toFixed(0);$('bar').style.width=p+'%';localStorage.setItem('entrate-extra',JSON.stringify(state));}
+$('goalInput').oninput=e=>{state.goal=Math.max(1,Number(e.target.value)||300);render()};
+$('addBtn').onclick=()=>{const n=Number($('addInput').value);if(n>0){state.earned+=n;$('addInput').value=0;render()}};render();
+</script></body></html>
